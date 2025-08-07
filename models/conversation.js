@@ -1,8 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/sequelize");
 
-
-
 // Define the conversation model
 const Conversation = sequelize.define(
   "Conversation",
@@ -25,16 +23,13 @@ const Conversation = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
-    mode: {
-      type: DataTypes.ENUM("chat", "video"),
-      allowNull: false,
-    },
     conversationType: {
       type: DataTypes.ENUM("consultation", "follow-up", "ever-care"),
       allowNull: false,
     },
     status: {
       type: DataTypes.ENUM("Completed", "active"),
+      defaultValue:"active",
       allowNull: false,
     },
     startedAt: {
@@ -53,8 +48,5 @@ const Conversation = sequelize.define(
     updatedAt: "updated_at",
   }
 );
-
-
-
 
 module.exports = Conversation;

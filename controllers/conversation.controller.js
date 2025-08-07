@@ -1,0 +1,225 @@
+const { use } = require("react");
+const conversationService = require("../services/conversation.service");
+
+// POST api/conversations/
+// create a new conversation
+const createConversation = async (req, res) => {
+  try {
+    const { appointment_id, patient_id, provider_id, conversationType } =
+      req.body;
+    if (!appointment_id || !patient_id || !provider_id || !conversationType) {
+      return res.status(400).json({
+        message: "appointment_id, patient_id,provider_id and type are required",
+      });
+    }
+
+    // Check if conversation already exists for the appointment
+    const existingConversation =
+      await conversationService.getConversationByAppointmentId(appointment_id);
+    if (existingConversation) {
+      return res.status(409).json({
+        message: "Conversation already exists for the appointment",
+      });
+    }
+
+    const conversation = await conversationService.createConversation({
+      appointment_id,
+      patient_id,
+      provider_id,
+      conversationType,
+      status: "active",
+      startedAt: new Date(),
+    });
+
+    res.status(201).json(conversation);
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    res.status(500).json({
+      message: "Internal Server error",
+    });
+  }
+};
+
+// GET api/conversations
+// Get all conversations
+const getConversations = async (req, res) => {};
+
+// GET api/conversations/:id
+// get conversation by Id
+const getConversationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const conversation = await conversationService.getConversationById(id);
+
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+    // Check user has access to the conversation
+    if (
+      conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({ message: "Access Denied" });
+    }
+    res.json(conversation);
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    res.status(500).json({
+      message: "Internal Server error",
+    });
+  }
+};
+
+// GET api/conversations/:id/messages
+// get messsages related to conversation
+
+const getConversationMessages = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Get the conversation
+    const conversation = await conversationService.getConversationById(id);
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    if (
+      conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access Denied",
+      });
+    }
+    // call the message service here
+  } catch (error) {
+    console.error("Error fetching conversation messages:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// PUT api/conversations/:id/status
+// Update Conversation Status
+const updateConversationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    if (!status) {
+      return res.status(400).json({
+        message: "Status is required",
+      });
+    }
+    // Get the conversation and verify user has access to it
+    const conversation = await conversationService.getConversationById(id);
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    if (
+      conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+
+    const updatedConversation =
+      await conversationService.updateConversationStatus(id, status);
+    if (!updatedConversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+    res.json(updatedConversation);
+  } catch (error) {
+    console.error("Error updating conversation status:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// POST api/conversations/:id/mark-read
+// Mark message in a conversation to read
+const markMessagesAsRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const conversation = await conversationService.getConversationById(id);
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+    if (
+      conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+    // Call message service
+  } catch (error) {
+    console.error("Error marking messages as read:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// GET api/conversations/:id/unread
+// Get unread messages of a conversation
+
+const getUnreadMessages = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const conversation = await conversationService.getConversationById(id);
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+    if (
+      conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+    //call the message service
+  } catch (error) {
+    console.error("Error fetching unread messages:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+module.exports = {
+  createConversation,
+  getConversations,
+  getConversationById,
+  getConversationMessages,
+  updateConversationStatus,
+  markMessagesAsRead,
+  getUnreadMessages,
+};
