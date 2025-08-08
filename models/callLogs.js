@@ -16,6 +16,10 @@ const CallLog = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
+    roomName:{
+      type:DataTypes.STRING,
+      allowNull:false
+    },
     startedAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -28,6 +32,10 @@ const CallLog = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    participants:{
+      type:DataTypes.ARRAY(DataTypes.UUID),
+      allowNull:false
+    }
   },
   {
     tableName: "call_logs",

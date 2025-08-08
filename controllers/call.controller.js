@@ -1,21 +1,233 @@
 const conversationService = require("../services/conversation.service");
+const callService = require("../services/call.service");
+const {
+  generateLivekitToken,
+  generateRoomName,
+} = require("../config/livekitConfig");
+const { use } = require("react");
 
 // POST api/calls
 // Initialte a call
-const initiateCall = async (req, res) => {};
+const initiateCall = async (req, res) => {
+  try {
+    const { conversationId } = req.body;
+    const userId = req.user.id;
+
+    if (!conversationId) {
+      return res.status(400).json({
+        message: "Conversation Id is rwquired",
+      });
+    }
+
+    // Verify user hass access to the conversation
+    const conversation = await conversationService.getConversationById(
+      conversationId
+    );
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    if (
+      conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+    // Generate room name and Livekit token
+    const roomName = generateRoomName(conversationId);
+    try {
+      const token = await generateLivekitToken(roomName, userId);
+
+      // Create call log
+      const callLog = await callService.createCallLog({
+        conversation_id: conversationId,
+        roomName,
+        startedAt: new Date(),
+        participants: [userId],
+        initiatedBy: userId,
+      });
+      res.status(201).json({
+        callId: callLog.log_id,
+        roomName,
+        token,
+      });
+    } catch (tokenError) {
+      console.error("Error generating Livekit token:", tokenError);
+      res.status(500).json({
+        message:
+          "Unable to generate call token. Video calling may not be configured.",
+      });
+    }
+  } catch (error) {
+    console.error("Error initiating call:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
 
 // GET api/calls/:id/join
 // Join the calls
 
-const joinCall = async (req, res) => {};
+const joinCall = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const callLog = await callService.getCallLogById(id);
+    if (!callLog) {
+      return res.status(404).json({
+        message: "Call not found",
+      });
+    }
+
+    // Verify user has access to this call converaation
+    const conversation_id = callLog.conversation_id;
+    const conversation = await conversationService.getConversationById(
+      conversation_id
+    );
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    if (
+      !conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access Denied",
+      });
+    }
+    try {
+      // generate livekit token for this user
+      const token = generateLivekitToken(callLog.roomName, userId);
+      //update call log with participants
+      const updatedParticipants = [...callLog.participants];
+      if (!updatedParticipants.includes(userId)) {
+        updatedParticipants.push(userId);
+      }
+      await callService.updateCallLog(id, {
+        participants: updatedParticipants,
+      });
+      res.json({
+        callId: callLog.log_id,
+        roomName: callLog.roomName,
+        token,
+      });
+    } catch (tokenError) {
+      console.error("Error generating Agora token:", tokenError);
+      res.status(500).json({
+        message:
+          "Unable to generate call token. Video calling may not be configured.",
+      });
+    }
+  } catch (error) {
+    console.error("Error joining call:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
 
 // POST api/calls/:id/end
 // End the call
-const endCall = async (req, res) => {};
+const endCall = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const callLog = await callService.getCallLogById(id);
+
+    if (!callLog) {
+      return res.status(404).json({
+        message: "Call not found",
+      });
+    }
+
+    // Verify user has access to this call converaation
+    const conversation_id = callLog.conversation_id;
+    const conversation = await conversationService.getConversationById(
+      conversation_id
+    );
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    if (
+      !conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access Denied",
+      });
+    }
+
+    const updatedCallLog = await callService.endCall(id);
+
+    if (!updatedCallLog) {
+      return res.status(404).json({
+        message: "Call not found",
+      });
+    }
+    res.json({
+      message: "Call ended succesfully",
+      call: {
+        id: updatedCallLog.log_id,
+        duration: updatedCallLog.duration,
+        endTime: updatedCallLog.endedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error ending call:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
 
 // GET api/calls/history/:conversationId
 // Get the call history related to specific conversation
-const getCallHistory = async (req, res) => {};
+const getCallHistory = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.id;
+    // Verify user has access to this call converaation
+    const conversation_id = callLog.conversation_id;
+    const conversation = await conversationService.getConversationById(
+      conversation_id
+    );
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    if (
+      !conversation.patient_id !== userId &&
+      conversation.provider_id !== userId
+    ) {
+      return res.status(403).json({
+        message: "Access Denied",
+      });
+    }
+
+    const callLogs = await callService.getConversationCallLogs(conversationId);
+    res.json(callLogs);
+  } catch (error) {
+    console.error("Error fetching call history:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
 
 module.exports = {
   initiateCall,

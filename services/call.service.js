@@ -30,3 +30,69 @@ const getCallLogById = async (logId) => {
     throw error;
   }
 };
+
+// Update call log
+const updateCallLog = async (logId, updateData) => {
+  try {
+    const [updatedRowsCount] = await CallLog.update(updateData, {
+      where: { log_id: logId },
+      returning: true,
+    });
+
+    if (updatedRowsCount === 0) {
+      return null;
+    }
+    return await getCallLogById(logId);
+  } catch (error) {
+    console.error("Error updating call log:", error);
+    throw error;
+  }
+};
+
+// Get conversation call logs
+const getConversationCallLogs = async (conversationId) => {
+  try {
+    return await CallLog.findAll({
+      where: { conversation_id: conversationId },
+      order: [["createdAt", "DESC"]],
+    });
+  } catch (error) {
+    console.error("Error fetching conversation call logs:", error);
+    throw error;
+  }
+};
+
+// End call
+const endCall = async (logId) => {
+  try {
+    const callLog = await getCallLogById({ log_id: logId });
+
+    if (!callLog) {
+      return null;
+    }
+
+    const endedAt = new Date();
+    const duration = callLog.startedAt
+      ? Math.floor((endedAt - callLog.startedAt) / 1000)
+      : 0;
+
+    return await updateCallLog(
+      { log_id: logId },
+      {
+        endedAt,
+        duration,
+      }
+    );
+  } catch (error) {
+    console.error("Error ending call:", error);
+    throw error;
+  }
+};
+
+module.exports = {
+  createCallLog,
+  getCallLogById,
+  updateCallLog,
+  getConversationCallLogs,
+  endCall,
+};
