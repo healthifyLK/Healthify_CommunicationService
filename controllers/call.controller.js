@@ -1,13 +1,17 @@
+// controllers/call.controller.js
+// REST endpoints to manage video calls using LiveKit tokens and call logs.
+// Flow: initiate -> join -> end -> history
+
 const conversationService = require("../services/conversation.service");
 const callService = require("../services/call.service");
 const {
   generateLivekitToken,
   generateRoomName,
 } = require("../config/livekitConfig");
-const { use } = require("react");
+
 
 // POST api/calls
-// Initialte a call
+// Initiate a call: verifies access, creates a room name, issues a LiveKit token, creates a call log
 const initiateCall = async (req, res) => {
   try {
     const { conversationId } = req.body;
@@ -37,7 +41,7 @@ const initiateCall = async (req, res) => {
         message: "Access denied",
       });
     }
-    // Generate room name and Livekit token
+    // Generate room name and LiveKit token
     const roomName = generateRoomName(conversationId);
     try {
       const token = await generateLivekitToken(roomName, userId);
@@ -56,7 +60,7 @@ const initiateCall = async (req, res) => {
         token,
       });
     } catch (tokenError) {
-      console.error("Error generating Livekit token:", tokenError);
+      console.error("Error generating LiveKit token:", tokenError);
       res.status(500).json({
         message:
           "Unable to generate call token. Video calling may not be configured.",
@@ -71,7 +75,7 @@ const initiateCall = async (req, res) => {
 };
 
 // GET api/calls/:id/join
-// Join the calls
+// Join the call: verifies participant access, issues a LiveKit token for the joiner, updates call log participants
 
 const joinCall = async (req, res) => {
   try {
@@ -85,7 +89,7 @@ const joinCall = async (req, res) => {
       });
     }
 
-    // Verify user has access to this call converaation
+    // Verify user has access to this call conversation
     const conversation_id = callLog.conversation_id;
     const conversation = await conversationService.getConversationById(
       conversation_id
@@ -97,7 +101,7 @@ const joinCall = async (req, res) => {
     }
 
     if (
-      !conversation.patient_id !== userId &&
+      conversation.patient_id !== userId &&
       conversation.provider_id !== userId
     ) {
       return res.status(403).json({
@@ -105,8 +109,8 @@ const joinCall = async (req, res) => {
       });
     }
     try {
-      // generate livekit token for this user
-      const token = generateLivekitToken(callLog.roomName, userId);
+      // Generate LiveKit token for this user
+      const token = await generateLivekitToken(callLog.roomName, userId);
       //update call log with participants
       const updatedParticipants = [...callLog.participants];
       if (!updatedParticipants.includes(userId)) {
@@ -121,7 +125,7 @@ const joinCall = async (req, res) => {
         token,
       });
     } catch (tokenError) {
-      console.error("Error generating Agora token:", tokenError);
+      console.error("Error generating LiveKit token:", tokenError);
       res.status(500).json({
         message:
           "Unable to generate call token. Video calling may not be configured.",
@@ -136,7 +140,7 @@ const joinCall = async (req, res) => {
 };
 
 // POST api/calls/:id/end
-// End the call
+// End the call: verifies access, closes call log by setting endedAt and duration
 const endCall = async (req, res) => {
   try {
     const { id } = req.params;
@@ -150,7 +154,7 @@ const endCall = async (req, res) => {
       });
     }
 
-    // Verify user has access to this call converaation
+    // Verify user has access to this call conversation
     const conversation_id = callLog.conversation_id;
     const conversation = await conversationService.getConversationById(
       conversation_id
@@ -162,7 +166,7 @@ const endCall = async (req, res) => {
     }
 
     if (
-      !conversation.patient_id !== userId &&
+      conversation.patient_id !== userId &&
       conversation.provider_id !== userId
     ) {
       return res.status(403).json({
@@ -194,15 +198,14 @@ const endCall = async (req, res) => {
 };
 
 // GET api/calls/history/:conversationId
-// Get the call history related to specific conversation
+// Get the call history related to a specific conversation
 const getCallHistory = async (req, res) => {
   try {
     const { conversationId } = req.params;
     const userId = req.user.id;
-    // Verify user has access to this call converaation
-    const conversation_id = callLog.conversation_id;
+    // Verify user has access to this conversation
     const conversation = await conversationService.getConversationById(
-      conversation_id
+      conversationId
     );
     if (!conversation) {
       return res.status(404).json({
@@ -211,7 +214,7 @@ const getCallHistory = async (req, res) => {
     }
 
     if (
-      !conversation.patient_id !== userId &&
+      conversation.patient_id !== userId &&
       conversation.provider_id !== userId
     ) {
       return res.status(403).json({

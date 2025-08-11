@@ -78,7 +78,8 @@ const updateMessageStatus = async (messageId, status) => {
 
 const marksMessagesAsRead = async (conversationId, userId) => {
   try {
-    const [updatedRowsCount] = await Message.update(
+    // Update and return affected rows (Postgres)
+    const [updatedCount, updatedMessages] = await Message.update(
       { status: "read" },
       {
         where: {
@@ -86,9 +87,15 @@ const marksMessagesAsRead = async (conversationId, userId) => {
           sender_id: { [Op.ne]: userId },
           status: { [Op.ne]: "read" },
         },
+        returning: true,
       }
     );
-    return updatedRowsCount;
+
+    const messageIds = Array.isArray(updatedMessages)
+      ? updatedMessages.map((m) => m.id)
+      : [];
+
+    return { updatedCount, messageIds };
   } catch (error) {
     console.error("Error marking messages as read:", error);
     throw error;

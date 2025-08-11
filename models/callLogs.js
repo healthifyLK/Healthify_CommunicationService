@@ -1,3 +1,5 @@
+// models/callLogs.js
+// Tracks individual call sessions per conversation (start/end time, participants)
 const { DataTypes, UUID, UUIDV4 } = require("sequelize");
 const sequelize = require("../config/sequelize");
 const Conversation = require("./conversation");
@@ -26,11 +28,11 @@ const CallLog = sequelize.define(
     },
     endedAt: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     duration: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     participants:{
       type:DataTypes.ARRAY(DataTypes.UUID),
@@ -45,7 +47,7 @@ const CallLog = sequelize.define(
   }
 );
 
-// Asscoiations
+// Associations: each CallLog belongs to a conversation
 CallLog.belongsTo(Conversation, {
   foreignKey: "conversation_id",
 });

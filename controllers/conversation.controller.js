@@ -1,5 +1,6 @@
 
 const conversationService = require("../services/conversation.service");
+const messageService = require("../services/message.service");
 
 // POST api/conversations/
 // Create a new conversation for a given appointment and participants
@@ -46,6 +47,7 @@ const getConversations = async (req, res) => {};
 
 // GET api/conversations/:id
 // Get a conversation by Id; caller must be a participant
+// Need fix
 const getConversationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -174,7 +176,28 @@ const markMessagesAsRead = async (req, res) => {
         message: "Access denied",
       });
     }
-    // Call message service
+    // Update unread messages as read and broadcast receipts
+
+    const result = await messageService.marksMessagesAsRead(id, userId);
+
+    // Emit read receipts to the room for other participants
+    try {
+      const { getIO } = require("../sockets/io");
+      const io = getIO();
+      io.to(`conversation:${id}`).emit("message:read", {
+        conversationId: id,
+        readerId: userId,
+        messageIds: result.messageIds,
+        updatedCount: result.updatedCount,
+      });
+    } catch (e) {
+      // Socket not initialized, ignore
+    }
+
+    return res.json({
+      message: "Messages marked as read",
+      ...result,
+    });
   } catch (error) {
     console.error("Error marking messages as read:", error);
     res.status(500).json({

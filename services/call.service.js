@@ -1,6 +1,9 @@
+// services/call.service.js
+// Encapsulates DB operations for call logs
 const CallLog = require("../models/callLogs");
 const Conversation = require("../models/conversation");
-// Create a callLog
+
+// Create a call log entry when a call is initiated
 const createCallLog = async (callData) => {
   try {
     return await CallLog.create(callData);
@@ -10,28 +13,25 @@ const createCallLog = async (callData) => {
   }
 };
 
-// Get call log by Id
+// Get call log by Id (includes conversation meta)
 const getCallLogById = async (logId) => {
   try {
-    return await CallLog.findByPk(
-      { log_id: logId },
-      {
-        include: [
-          {
-            model: Conversation,
-            as: "conversation",
-            attributes: ["id", "appointment_id", "patient_id", "provider_id"],
-          },
-        ],
-      }
-    );
+    return await CallLog.findByPk(logId, {
+      include: [
+        {
+          model: Conversation,
+          as: "conversation",
+          attributes: ["id", "appointment_id", "patient_id", "provider_id"],
+        },
+      ],
+    });
   } catch (error) {
     console.error("Error fetching call log by ID", error);
     throw error;
   }
 };
 
-// Update call log
+// Update call log with additional data (e.g., participants, end time)
 const updateCallLog = async (logId, updateData) => {
   try {
     const [updatedRowsCount] = await CallLog.update(updateData, {
@@ -62,10 +62,10 @@ const getConversationCallLogs = async (conversationId) => {
   }
 };
 
-// End call
+// End call: sets endedAt and computes duration (in seconds)
 const endCall = async (logId) => {
   try {
-    const callLog = await getCallLogById({ log_id: logId });
+    const callLog = await getCallLogById(logId);
 
     if (!callLog) {
       return null;
@@ -76,13 +76,10 @@ const endCall = async (logId) => {
       ? Math.floor((endedAt - callLog.startedAt) / 1000)
       : 0;
 
-    return await updateCallLog(
-      { log_id: logId },
-      {
-        endedAt,
-        duration,
-      }
-    );
+    return await updateCallLog(logId, {
+      endedAt,
+      duration,
+    });
   } catch (error) {
     console.error("Error ending call:", error);
     throw error;

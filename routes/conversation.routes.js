@@ -16,6 +16,7 @@ const {
 
 // POST api/conversations
 // Create a new conversation
+// Tested and working
 router.post("/",createConversation);
 
 // GET api/conversations/:id
