@@ -2,12 +2,16 @@ const express = require("express");
 require("dotenv").config();
 const cors = require("cors");
 const morgan = require("morgan");
+const path = require("path");
 const sequelize = require("./config/sequelize");
 const Conversation = require("./models/conversation");
 const Message = require("./models/message");
 const FileAttachment = require("./models/fileAttachment");
 const CallLog = require("./models/callLogs");
 const UserPresence = require("./models/userPresence");
+const conversationRoutes = require("./routes/conversation.routes");
+const messageRoutes = require("./routes/message.routes");
+const fileRoutes = require("./routes/file.routes");
 
 const PORT = process.env.PORT || 5004;
 
@@ -17,6 +21,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan());
+
+// Serve uploaded files statically for preview
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Mount routes
+app.use("/api/conversations", conversationRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/files", fileRoutes);
 
 (
   // Start   the server only if the database connection is successful

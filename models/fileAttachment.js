@@ -1,6 +1,6 @@
 const { DataTypes, UUID, UUIDV4 } = require("sequelize");
 const sequelize = require("../config/sequelize");
-const Message = require('./message')
+const Message = require("./message");
 
 // Define File Attachment model
 const FileAttachment = sequelize.define(
@@ -54,9 +54,14 @@ const FileAttachment = sequelize.define(
   }
 );
 
-// Asscoia
+// Associations
 FileAttachment.belongsTo(Message, {
   foreignKey: "message_id",
+  as: "message",
+});
+Message.hasMany(FileAttachment, {
+  foreignKey: "message_id",
+  as: "attachments",
 });
 
 module.exports = FileAttachment;
