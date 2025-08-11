@@ -3,6 +3,7 @@ const sequelize = require("../config/sequelize");
 const Conversation = require("./conversation");
 
 // Define message model
+// Each row represents a single message sent within a conversation
 const Message = sequelize.define(
   "Message",
   {
@@ -42,6 +43,7 @@ const Message = sequelize.define(
 );
 
 // Associations
+// Conversation has many messages; a message belongs to one conversation
 Conversation.hasMany(Message, {
   foreignKey: "conversation_id",
   as: "messages",

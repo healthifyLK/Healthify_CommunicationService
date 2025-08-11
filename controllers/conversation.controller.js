@@ -2,7 +2,7 @@
 const conversationService = require("../services/conversation.service");
 
 // POST api/conversations/
-// create a new conversation
+// Create a new conversation for a given appointment and participants
 const createConversation = async (req, res) => {
   try {
     const { appointment_id, patient_id, provider_id, conversationType } =
@@ -45,7 +45,7 @@ const createConversation = async (req, res) => {
 const getConversations = async (req, res) => {};
 
 // GET api/conversations/:id
-// get conversation by Id
+// Get a conversation by Id; caller must be a participant
 const getConversationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -75,7 +75,7 @@ const getConversationById = async (req, res) => {
 };
 
 // GET api/conversations/:id/messages
-// get messsages related to conversation
+// Get messages related to a conversation; guards access by participant check
 
 const getConversationMessages = async (req, res) => {
   try {
@@ -108,7 +108,7 @@ const getConversationMessages = async (req, res) => {
 };
 
 // PUT api/conversations/:id/status
-// Update Conversation Status
+// Update conversation status; only participants allowed
 const updateConversationStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,7 +154,7 @@ const updateConversationStatus = async (req, res) => {
 };
 
 // POST api/conversations/:id/mark-read
-// Mark message in a conversation to read
+// Mark messages as read for the authorized user in the conversation
 const markMessagesAsRead = async (req, res) => {
   try {
     const { id } = req.params;
@@ -184,7 +184,7 @@ const markMessagesAsRead = async (req, res) => {
 };
 
 // GET api/conversations/:id/unread
-// Get unread messages of a conversation
+// Get unread messages of a conversation for the authorized user
 
 const getUnreadMessages = async (req, res) => {
   try {

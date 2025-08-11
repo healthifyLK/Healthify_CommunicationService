@@ -2,7 +2,7 @@ const conversationService = require("../services/conversation.service");
 const messageService = require("../services/message.service");
 
 // POST api/messages
-// send a new Message
+// Send a new message and broadcast to the relevant conversation room via Socket.IO
 const sendMessage = async (req, res) => {
   try {
     const { conversationId, content } = req.body;
@@ -39,6 +39,16 @@ const sendMessage = async (req, res) => {
       content,
       status: "sent",
     });
+
+    // Emit real-time event to conversation room so all subscribers receive it
+    try {
+      const { getIO } = require("../sockets/io");
+      const io = getIO();
+      io.to(`conversation:${conversationId}`).emit("message:new", message);
+    } catch (e) {
+      // If socket not initialized, ignore to keep API resilient
+    }
+
     res.status(201).json(message);
   } catch (error) {
     console.error("Error creating message:", error);

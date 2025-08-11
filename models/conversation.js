@@ -2,6 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/sequelize");
 
 // Define the conversation model
+// Represents a chat thread between a patient and provider for an appointment
 const Conversation = sequelize.define(
   "Conversation",
   {

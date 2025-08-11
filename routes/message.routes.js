@@ -9,7 +9,7 @@ const {
 } = require("../controllers/message.controller");
 
 // POST api/messages
-// send a new Message
+// Send a new message
 router.post("/", sendMessage);
 
 // GET api/messages/:id
@@ -25,7 +25,7 @@ router.put("/:id/status", updateMessageStatus);
 router.delete("/:id", deleteMessage);
 
 // GET api/messages/search/:conversationId
-// search messages
+// Search messages in a conversation
 router.get("/search/:conversationId", searchMessages);
 
 module.exports = router;

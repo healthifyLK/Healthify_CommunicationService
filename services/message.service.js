@@ -3,6 +3,7 @@ const Message = require("../models/message");
 const FileAttachment = require("../models/fileAttachment");
 const { Op } = require("sequelize");
 
+// Persist a new message; computes word_count if content provided
 const sendMessage = async (messageData) => {
   try {
     // Calculate word count if content is provided
@@ -18,6 +19,7 @@ const sendMessage = async (messageData) => {
   }
 };
 
+// Fetch a message including its attachments and conversation metadata
 const getMessageById = async (id) => {
   try {
     return await Message.findByPk(id, {
@@ -37,6 +39,7 @@ const getMessageById = async (id) => {
 };
 
 // Get conversation messages
+// Returns ordered messages with attachments for pagination-friendly consumption
 const getConversationMessages = async (
   conversationId,
   limit = 50,

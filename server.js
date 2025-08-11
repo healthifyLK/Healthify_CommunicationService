@@ -1,9 +1,12 @@
 const express = require("express");
+const http = require("http");
 require("dotenv").config();
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 const sequelize = require("./config/sequelize");
+const { initSocketIO } = require("./sockets/io");
+const { registerChatHandlers } = require("./sockets/chat.handlers");
 const Conversation = require("./models/conversation");
 const Message = require("./models/message");
 const FileAttachment = require("./models/fileAttachment");
@@ -16,6 +19,7 @@ const fileRoutes = require("./routes/file.routes");
 const PORT = process.env.PORT || 5004;
 
 const app = express();
+const server = http.createServer(app);
 
 // Middlewares
 app.use(cors());
@@ -41,8 +45,16 @@ app.use("/api/files", fileRoutes);
       await sequelize.sync({ alter: true });
       console.log("Database models synced successfully");
 
-      // Start the server
-      app.listen(PORT, () => {
+      // Initialize Socket.IO and register handlers
+     
+      const io = initSocketIO(server);
+
+      io.on("connection", (socket) => {
+        registerChatHandlers(io, socket);
+      });
+
+      // Start the HTTP server (Socket.IO is bound to it)
+      server.listen(PORT, () => {
         console.log(`Communication Service is running on port ${PORT}`);
       });
     } catch (error) {
