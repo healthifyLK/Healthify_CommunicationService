@@ -15,6 +15,7 @@ const UserPresence = require("./models/userPresence");
 const conversationRoutes = require("./routes/conversation.routes");
 const messageRoutes = require("./routes/message.routes");
 const fileRoutes = require("./routes/file.routes");
+const callRoutes = require("./routes/call.routes");
 
 const PORT = process.env.PORT || 5004;
 
@@ -26,6 +27,12 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan());
 
+// Development auth middleware (DO NOT enable in production)
+if (process.env.NODE_ENV === 'development') {
+  const devAuth = require('./middlewares/devAuth');
+  app.use(devAuth);
+}
+
 // Serve uploaded files statically for preview
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -33,33 +40,32 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/api/calls", callRoutes);
 
-(
-  // Start   the server only if the database connection is successful
-  async () => {
-    try {
-      await sequelize.authenticate();
-      console.log("Database connected successfully");
+// Start   the server only if the database connection is successful
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Database connected successfully");
 
-      // sync the models with the database
-      await sequelize.sync({ alter: true });
-      console.log("Database models synced successfully");
+    // sync the models with the database
+    await sequelize.sync({ alter: true });
+    console.log("Database models synced successfully");
 
-      // Initialize Socket.IO and register handlers
-     
-      const io = initSocketIO(server);
+    // Initialize Socket.IO and register handlers
 
-      io.on("connection", (socket) => {
-        registerChatHandlers(io, socket);
-      });
+    const io = initSocketIO(server);
 
-      // Start the HTTP server (Socket.IO is bound to it)
-      server.listen(PORT, () => {
-        console.log(`Communication Service is running on port ${PORT}`);
-      });
-    } catch (error) {
-      console.error("Unable to connect to the database:", error.message);
-      process.exit(1);
-    }
+    io.on("connection", (socket) => {
+      registerChatHandlers(io, socket);
+    });
+
+    // Start the HTTP server (Socket.IO is bound to it)
+    server.listen(PORT, () => {
+      console.log(`Communication Service is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Unable to connect to the database:", error.message);
+    process.exit(1);
   }
-)();
+})();

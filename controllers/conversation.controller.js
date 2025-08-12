@@ -50,6 +50,7 @@ const getConversations = async (req, res) => {};
 // Need fix
 const getConversationById = async (req, res) => {
   try {
+    console.log("getConversationById", req.user);
     const { id } = req.params;
     const userId = req.user.id;
 
@@ -101,6 +102,8 @@ const getConversationMessages = async (req, res) => {
       });
     }
     // call the message service here
+    const messages = await messageService.getConversationMessages(id);
+    res.json(messages);
   } catch (error) {
     console.error("Error fetching conversation messages:", error);
     res.status(500).json({
@@ -229,6 +232,8 @@ const getUnreadMessages = async (req, res) => {
       });
     }
     //call the message service
+    const unreadMessages = await messageService.getUnreadMessages(id, userId);
+    res.json(unreadMessages);
   } catch (error) {
     console.error("Error fetching unread messages:", error);
     res.status(500).json({

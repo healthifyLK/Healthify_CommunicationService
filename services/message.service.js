@@ -28,7 +28,7 @@ const getMessageById = async (id) => {
         {
           model: Conversation,
           as: "conversation",
-          attributes: ["id", "appointment_id"],
+          attributes: ["id", "appointment_id","patient_id","provider_id"],
         },
       ],
     });
@@ -49,7 +49,7 @@ const getConversationMessages = async (
     return await Message.findAll({
       where: { conversation_id: conversationId },
       include: [{ model: FileAttachment, as: "attachments" }],
-      order: [["createdAt", "ASC"]],
+      order: [["created_at", "ASC"]],
       limit,
       offset,
     });
@@ -110,7 +110,7 @@ const getUnreadMessages = async (conversationId, userId) => {
         sender_id: { [Op.ne]: userId },
         status: { [Op.ne]: "read" },
       },
-      order: [["createdAt", "ASC"]],
+      order: [["created_at", "ASC"]],
     });
   } catch (error) {
     console.error("Error fetching unread messages:", error);
@@ -132,6 +132,7 @@ const deleteMessage = async (id) => {
 
 const searchMessages = async (conversationId, searchTerm) => {
   try {
+    console.log("searchMessages", searchTerm);
     return await Message.findAll({
       where: {
         conversation_id: conversationId,
@@ -139,7 +140,7 @@ const searchMessages = async (conversationId, searchTerm) => {
           [Op.iLike]: `%${searchTerm}`,
         },
       },
-      order: [["createdAt", "DESC"]],
+      order: [["created_at", "DESC"]],
     });
   } catch (error) {
     console.error("Error searching messages:", error);

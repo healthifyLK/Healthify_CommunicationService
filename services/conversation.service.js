@@ -17,8 +17,12 @@ const createConversation = async (conversationData) => {
 // Get conversation by ID
 const getConversationById = async (conversationId) => {
   try {
-    return await Conversation.findByPk(
-       conversationId ,
+    return await Conversation.findOne(
+      {
+        where: {
+          id: conversationId,
+        },
+      },
       {
         include: [
           {

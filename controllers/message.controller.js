@@ -187,6 +187,7 @@ const searchMessages = async (req, res) => {
     const { q: searchTerm } = req.query;
     const userId = req.user.id;
 
+    console.log("searchMessages", searchTerm);
     if (!searchTerm) {
       return res.status(400).json({
         message: "Search Term is required",
